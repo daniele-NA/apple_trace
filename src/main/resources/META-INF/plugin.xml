@@ -18,6 +18,15 @@
             <li>log live da simulatori iOS e device fisici</li>
             <li>ricerca veloce nel buffer visibile</li>
         </ul>
+        <h3>Note</h3>
+        <ul>
+            <li>Sui simulatori Apple puoi comunque testare praticamente tutte le feature, incluse notifiche, passkeys e simili.</li>
+            <li>
+                iOS non logga con il package, ma con righe del tipo
+                <code>2026-05-08 22:29:47.893589+0200 [D] Runner::: flutter: messaggio</code>.
+                Per vedere e filtrare meglio i log, usa un prefisso stabile come <code>||</code> all'inizio del messaggio.
+            </li>
+        </ul>
         <p>
             Scarica lo <code>.zip</code> dalla sezione
             <a href="https://github.com/daniele-NA/apple-trace/releases">Releases</a>
