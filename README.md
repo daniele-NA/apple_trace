@@ -16,7 +16,10 @@ Apple Trace risolve esattamente questo: un Logcat, ma per iOS.
 
 # N.B: Funziona solo per simulatori
 
-Sui simulatori Apple c'è comunque la possibilità di testare praticamente tutte le features come notifiche,passkyes etc etc 
+- Sui simulatori Apple c'è comunque la possibilità di testare praticamente tutte le features come notifiche,passkyes etc etc
+- IOS non logga con il package , bensì : 2026-05-08 22:29:47.893589+0200 [D] Runner::: flutter: messaggio     , Quindi **per vedere correttamente i log e filtrarli** , usa un doppio pipe **||** all'inizio
+
+<img src="ASSETS/preview.png">
 
 
 ## Installazione
