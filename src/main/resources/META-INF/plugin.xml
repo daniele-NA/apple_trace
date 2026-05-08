@@ -6,24 +6,23 @@
     <description><![CDATA[
         <h2>Apple Trace</h2>
         <p>
-            Android Studio has Logcat for Android, but no equivalent live console for iOS.
-            <b>Apple Trace</b> solves that gap by showing logs from <b>iOS Simulators</b> and
-            <b>physical iOS devices</b> directly inside the IDE, so you do not have to jump to Xcode,
-            Console.app, or a terminal every time you need to inspect an iPhone or simulator.
+            Bello vedere i log di iOS dalla console dell'IDE.
+        </p>
+        <p>
+            Ma se devi debuggare il tap su una notifica, un deep link, o qualsiasi apertura dell'app che non parte da Android Studio, quei log non li vedi.
+        </p>
+        <p>
+            Apple Trace risolve esattamente questo: un Logcat, ma per iOS.
         </p>
         <ul>
-            <li>Live log stream with IDE-native colors.</li>
-            <li>Auto-discovery of booted simulators and connected devices.</li>
-            <li>Simulator-side NSPredicate filtering before logs hit the IDE.</li>
-            <li>Fast client-side search on the visible buffer.</li>
+            <li>log live da simulatori iOS e device fisici</li>
+            <li>ricerca veloce nel buffer visibile</li>
         </ul>
-        <ul>
-            <li>macOS only (uses Apple's <code>xcrun</code> tooling).</li>
-            <li>Xcode Command Line Tools installed.</li>
-            <li>For physical devices, optionally install <code>libimobiledevice</code>
-                (<code>brew install libimobiledevice</code>) to enable <code>idevicesyslog</code>.</li>
-        </ul>
-        <p>Open the tool window via <b>View → Tool Windows → Apple Trace</b>.</p>
+        <p>
+            Scarica lo <code>.zip</code> dalla sezione
+            <a href="https://github.com/daniele-NA/apple-trace/releases">Releases</a>
+            di GitHub e importalo da <b>Settings → Plugins → Install Plugin from Disk...</b>
+        </p>
     ]]></description>
 
     <change-notes><![CDATA[
