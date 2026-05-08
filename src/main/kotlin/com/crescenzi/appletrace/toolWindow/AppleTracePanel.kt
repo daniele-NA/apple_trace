@@ -49,11 +49,6 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         prototypeDisplayValue = null
     }
 
-    private val predicateField = JBTextField(28).apply {
-        emptyText.text = "NSPredicate, e.g. eventMessage CONTAINS \"||\""
-        toolTipText = "Server-side filter for simulators. Pushed to `log stream --predicate`. " +
-            "Empty = full firehose. Ignored on physical devices (idevicesyslog has no predicate support)."
-    }
     private val searchField = JBTextField(28).apply { emptyText.text = "filter logs (process, subsystem, category, message)" }
     private val clearButton = JButton(AppleTraceBundle["toolWindow.clear"], AllIcons.Actions.GC)
 
@@ -66,13 +61,6 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
 
     /** UDID of the device the active stream is bound to. */
     private var activeDeviceUdid: String? = null
-
-    /**
-     * Predicate string the active stream was started with. Tracked so a
-     * keystroke that doesn't actually change the predicate doesn't tear down
-     * and re-start the underlying `log stream` process.
-     */
-    private var activePredicate: String = ""
 
     /**
      * In-memory ring buffer of every parsed entry. Re-rendering the console on
@@ -100,15 +88,6 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         isRepeats = false
     }
 
-    /**
-     * One-shot debounce for predicate keystrokes. Restarting `log stream` is
-     * heavier than re-rendering, so this debounce is longer — we want the user
-     * to finish typing before we tear down the process.
-     */
-    private val predicateDebounce = Timer(PREDICATE_DEBOUNCE_MS) { restartStream() }.apply {
-        isRepeats = false
-    }
-
     @Volatile
     private var lastDevices: List<IosDevice> = emptyList()
 
@@ -130,16 +109,9 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
                 searchDebounce.restart()
             }
         })
-        predicateField.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(e: DocumentEvent) {
-                predicateDebounce.restart()
-            }
-        })
-
         flushTimer.start()
         Disposer.register(parentDisposable) { flushTimer.stop() }
         Disposer.register(parentDisposable) { searchDebounce.stop() }
-        Disposer.register(parentDisposable) { predicateDebounce.stop() }
 
         startDevicePolling(parentDisposable)
     }
@@ -160,8 +132,6 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         val row = JBPanel<JBPanel<*>>(FlowLayout(FlowLayout.LEFT, 6, 4)).apply {
             add(JBLabel(AppleTraceBundle["toolWindow.deviceLabel"]))
             add(deviceCombo)
-            add(separator())
-            add(predicateField)
             add(separator())
             add(JBLabel(AppleTraceBundle["toolWindow.searchLabel"]))
             add(searchField)
@@ -199,7 +169,6 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         if (devices.isEmpty()) {
             streamService.stop()
             activeDeviceUdid = null
-            activePredicate = ""
             statusLabel.text = AppleTraceBundle["toolWindow.noDevices"]
         } else {
             val toSelect = devices.firstOrNull { it.udid == previous?.udid } ?: devices.first()
@@ -212,23 +181,17 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         if (device == null) {
             streamService.stop()
             activeDeviceUdid = null
-            activePredicate = ""
             statusLabel.text = AppleTraceBundle["toolWindow.noDevices"]
             return
         }
-        val predicate = predicateField.text.trim()
-        // Same device AND same predicate AND already streaming → no-op. Without
+        // Same device AND already streaming → no-op. Without
         // this guard a single device-list refresh would tear down `log stream`
         // and miss the entries that arrive during the restart window.
-        if (device.udid == activeDeviceUdid &&
-            predicate == activePredicate &&
-            streamService.isStreaming
-        ) return
+        if (device.udid == activeDeviceUdid && streamService.isStreaming) return
         activeDeviceUdid = device.udid
-        activePredicate = predicate
         statusLabel.text = AppleTraceBundle["toolWindow.streaming", device.displayName]
 
-        streamService.start(device, predicate.takeIf { it.isNotEmpty() }, object : StreamListener {
+        streamService.start(device, null, object : StreamListener {
             override fun onEntry(entry: LogEntry) {
                 synchronized(entriesLock) {
                     entries.addLast(entry)
@@ -320,9 +283,5 @@ class AppleTracePanel(project: Project, parentDisposable: Disposable) {
         const val MAX_BUFFER = 50_000
         // Short enough to feel live, long enough to skip work mid-typing.
         const val SEARCH_DEBOUNCE_MS = 120
-        // Restarting `log stream` is a heavier operation than re-rendering the
-        // buffer, so wait longer before reacting to predicate edits — let the
-        // user finish typing.
-        const val PREDICATE_DEBOUNCE_MS = 400
     }
 }
