@@ -24,4 +24,4 @@ Apple Trace risolve esattamente questo: un Logcat, ma per iOS.
 
 ## Installazione
 
-Scarica lo `.zip` dalla sezione [Releases](https://github.com/daniele-NA/apple-trace/releases) di GitHub e importalo da **Settings → Plugins → Install Plugin from Disk...**
+Scarica lo `.zip` dalla sezione [Releases](https://github.com/daniele-NA/apple_trace/releases) di GitHub e importalo da **Settings → Plugins → Install Plugin from Disk...**

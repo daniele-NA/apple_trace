@@ -13,5 +13,5 @@
 - Fast text search on the streamed buffer.
 - Simulator-side NSPredicate filtering.
 
-[Unreleased]: https://github.com/daniele-NA/apple-trace/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/daniele-NA/apple-trace/releases/tag/v1.0.0
+[Unreleased]: https://github.com/daniele-NA/apple_trace/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/daniele-NA/apple_trace/releases/tag/v1.0.0
