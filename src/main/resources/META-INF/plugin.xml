@@ -4,26 +4,19 @@
     <name>Apple Trace</name>
     <vendor email="" url="https://github.com/daniele-NA/apple-trace">Daniele Crescenzi</vendor>
     <description><![CDATA[
-        <h2>Apple Trace — Logcat for iOS, inside Android Studio</h2>
+        <h2>Apple Trace</h2>
         <p>
-            <b>Apple Trace</b> brings a Logcat-style live console for <b>iOS Simulators</b> and
-            <b>physical iOS devices</b> directly into <b>Android Studio</b> (and any IntelliJ IDE) on macOS.
-            If you switch between Android and iOS during the day, you no longer need to leave the IDE
-            to inspect what your iPhone or simulator is doing.
+            Android Studio has Logcat for Android, but no equivalent live console for iOS.
+            <b>Apple Trace</b> solves that gap by showing logs from <b>iOS Simulators</b> and
+            <b>physical iOS devices</b> directly inside the IDE, so you do not have to jump to Xcode,
+            Console.app, or a terminal every time you need to inspect an iPhone or simulator.
         </p>
-        <h3>Features</h3>
         <ul>
-            <li>Live, color-coded log stream from any booted Simulator or connected iPhone / iPad.</li>
-            <li>Auto-discovers running simulators (<code>xcrun simctl</code>) and physical devices
-                (<code>xcrun devicectl</code> / <code>idevice_id</code>).</li>
-            <li>Filter by <b>bundle id</b> (subsystem), <b>process name</b>, and <b>log level</b>
-                (Default, Info, Debug, Error, Fault).</li>
-            <li>Client-side text search across the streamed buffer.</li>
-            <li>Start / Stop / Clear controls, scroll-lock auto-detect.</li>
-            <li>Output is rendered with proper colors per log level — easy to spot Errors and Faults
-                at a glance.</li>
+            <li>Live log stream with IDE-native colors.</li>
+            <li>Auto-discovery of booted simulators and connected devices.</li>
+            <li>Simulator-side NSPredicate filtering before logs hit the IDE.</li>
+            <li>Fast client-side search on the visible buffer.</li>
         </ul>
-        <h3>Requirements</h3>
         <ul>
             <li>macOS only (uses Apple's <code>xcrun</code> tooling).</li>
             <li>Xcode Command Line Tools installed.</li>
@@ -38,8 +31,8 @@
         <ul>
             <li>First public release.</li>
             <li>Live log streaming from iOS Simulators and physical devices.</li>
-            <li>Filters: bundle id (subsystem), process, log level, free-text search.</li>
-            <li>Color-coded console output.</li>
+            <li>Simulator-side NSPredicate filtering plus fast client-side search.</li>
+            <li>Color-coded console output inside the IDE.</li>
         </ul>
     ]]></change-notes>
 

@@ -32,9 +32,9 @@ class LogStreamService(private val project: Project) : Disposable {
 
     fun streamingDevice(): IosDevice? = currentDevice
 
-    fun start(device: IosDevice, listener: StreamListener) {
+    fun start(device: IosDevice, predicate: String?, listener: StreamListener) {
         stop()
-        val command = buildCommand(device)
+        val command = buildCommand(device, predicate)
         if (command == null) {
             listener.onError("idevicesyslog not found. Install it with: brew install libimobiledevice")
             return
@@ -44,12 +44,34 @@ class LogStreamService(private val project: Project) : Disposable {
             val handler = CommandRunner.streamingHandler(command)
             this.handler = handler
             this.currentDevice = device
+            // Process output arrives in arbitrary chunks — a single NDJSON record
+            // can be split across multiple `onTextAvailable` callbacks, and the
+            // first half won't parse as JSON. Buffer the tail until a newline
+            // arrives, then emit complete lines. With `withRedirectErrorStream`
+            // the merged stream comes from a single reader thread, so no extra
+            // synchronization is needed here.
+            val partial = StringBuilder()
             handler.addProcessListener(object : ProcessListener {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                     val raw = event.text ?: return
-                    for (line in raw.split('\n')) {
+                    partial.append(raw)
+                    while (true) {
+                        val nl = partial.indexOf('\n')
+                        if (nl < 0) break
+                        val line = partial.substring(0, nl)
+                        partial.delete(0, nl + 1)
                         if (line.isBlank()) continue
                         val entry = parseLine(device.kind, line) ?: continue
+                        listener.onEntry(entry)
+                    }
+                    // Defensive cap: if a producer stops emitting newlines (very
+                    // unlikely with `log stream --style ndjson`), don't grow the
+                    // buffer without bound — flush whatever we have as a single
+                    // line so it's at least visible.
+                    if (partial.length > MAX_PARTIAL_BUFFER) {
+                        val line = partial.toString()
+                        partial.setLength(0)
+                        val entry = parseLine(device.kind, line) ?: return
                         listener.onEntry(entry)
                     }
                 }
@@ -76,29 +98,42 @@ class LogStreamService(private val project: Project) : Disposable {
         currentDevice = null
     }
 
-    private fun buildCommand(device: IosDevice): List<String>? {
+    private fun buildCommand(device: IosDevice, predicate: String?): List<String>? {
         return when (device.kind) {
-            DeviceKind.SIMULATOR -> buildSimulatorCommand(device)
+            DeviceKind.SIMULATOR -> buildSimulatorCommand(device, predicate)
             DeviceKind.PHYSICAL -> buildPhysicalCommand(device)
         }
     }
 
-    private fun buildSimulatorCommand(device: IosDevice): List<String> {
+    private fun buildSimulatorCommand(device: IosDevice, predicate: String?): List<String> {
         // `--level debug` is critical: Apple's `log stream` defaults to showing
         // only entries at the "default" severity and above, which silently drops
         // every `info` and `debug` event. Flutter's `print()` / `debugPrint()`
         // and many framework messages land at those lower levels — without this
         // flag the console looks empty when an app is actually logging plenty.
-        return listOf(
+        //
+        // The optional `predicate` is forwarded to `--predicate`. It uses
+        // NSPredicate syntax against unified-log fields (eventMessage, subsystem,
+        // category, processImagePath, …). Pushing the filter into `log stream`
+        // is dramatically cheaper than client-side filtering: a busy simulator
+        // emits hundreds of lines per second and the in-memory buffer gets
+        // evicted before the user can find their app's logs in the noise.
+        // Common Flutter recipe: `eventMessage CONTAINS "||"` (or whatever
+        // marker your AppLogger embeds in every line).
+        val base = listOf(
             "xcrun", "simctl", "spawn", device.udid,
             "log", "stream",
             "--style", "ndjson",
             "--level", "debug",
         )
+        return if (predicate.isNullOrBlank()) base else base + listOf("--predicate", predicate)
     }
 
     private fun buildPhysicalCommand(device: IosDevice): List<String>? {
         if (!CommandRunner.isOnPath("idevicesyslog")) return null
+        // `idevicesyslog` does not understand NSPredicate; the predicate field
+        // is simulator-only by design. Physical devices stay on the existing
+        // unfiltered firehose and rely on client-side search.
         return listOf("idevicesyslog", "-u", device.udid)
     }
 
@@ -111,7 +146,21 @@ class LogStreamService(private val project: Project) : Disposable {
 
     private fun parseNdjsonLine(line: String): LogEntry? {
         val trimmed = line.trim()
-        if (!trimmed.startsWith("{")) return null
+        if (!trimmed.startsWith("{")) {
+            // Should not happen with `--style ndjson`, but if simctl ever prints
+            // a banner, warning, or any non-JSON line, surface it as a raw
+            // DEFAULT entry rather than dropping it on the floor. Losing logs
+            // silently is the worst possible failure mode for this tool.
+            return LogEntry(
+                raw = trimmed,
+                timestamp = null,
+                process = null,
+                subsystem = null,
+                category = null,
+                level = LogLevel.DEFAULT,
+                message = trimmed,
+            )
+        }
         val message = JsonExtract.string(trimmed, "eventMessage").orEmpty()
         val subsystem = JsonExtract.string(trimmed, "subsystem")
         val category = JsonExtract.string(trimmed, "category")
@@ -169,6 +218,7 @@ class LogStreamService(private val project: Project) : Disposable {
     }
 
     companion object {
+        private const val MAX_PARTIAL_BUFFER = 1_048_576 // 1 MiB; an unterminated chunk this big means something is very wrong upstream.
         private val SYSLOG_TS = Regex("""^\w{3}\s+\d+\s+\d{2}:\d{2}:\d{2}""")
         private val SYSLOG_PROCESS = Regex("""\s([^\s\[]+)\[\d+]""")
         private val SYSLOG_LEVEL = Regex("""<(Debug|Info|Notice|Default|Warning|Error|Fault)>""", RegexOption.IGNORE_CASE)
