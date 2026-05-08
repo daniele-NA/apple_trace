@@ -14,6 +14,11 @@ Apple Trace risolve esattamente questo: un Logcat, ma per iOS.
 - ricerca veloce nel buffer visibile
 
 
+# N.B: Funziona solo per simulatori
+
+Sui simulatori Apple c'è comunque la possibilità di testare praticamente tutte le features come notifiche,passkyes etc etc 
+
+
 ## Installazione
 
 Scarica lo `.zip` dalla sezione [Releases](https://github.com/daniele-NA/apple-trace/releases) di GitHub e importalo da **Settings → Plugins → Install Plugin from Disk...**
